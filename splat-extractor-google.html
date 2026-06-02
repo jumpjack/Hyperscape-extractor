@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Meta Blob Parser v15 - SPZ Support</title>
+    <script src="fsztd.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #0d1117; color: #c9d1d9; padding: 20px; }
+        .container { max-width: 1300px; margin: auto; background: #161b22; padding: 20px; border-radius: 8px; border: 1px solid #30363d; }
+        h1 { color: #58a6ff; border-bottom: 1px solid #30363d; padding-bottom: 10px; margin-top: 0; }
+        .stats-panel { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; background: #21262d; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #d29922; }
+        .stat-card { text-align: center; }
+        .stat-val { display: block; font-size: 24px; font-weight: bold; color: #ffca28; }
+        .stat-label { font-size: 12px; color: #8b949e; text-transform: uppercase; }
+        textarea { width: 100%; height: 60px; background: #010409; color: #7ee787; border: 1px solid #30363d; padding: 10px; margin-bottom: 10px; border-radius: 6px; }
+        .controls { display: flex; gap: 10px; align-items: center; margin-bottom: 20px; }
+        button { background: #238636; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .log { background: #010409; padding: 10px; border: 1px solid #30363d; height: 150px; overflow-y: auto; font-size: 12px; margin-bottom: 20px; border-radius: 6px; color: #d1d5da; }
+        .success { color: #3fb950; }
+        .error { color: #f85149; }
+        .warning { color: #d29922; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th, td { border: 1px solid #30363d; padding: 8px; text-align: left; }
+        th { background-color: #21262d; color: #58a6ff; }
+        progress { width: 100%; height: 15px; accent-color: #238636; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Meta Hyperscape Blob Parser v15</h1>
+
+    <div id="statsArea" class="stats-panel" style="display:none;">
+        <div class="stat-card"><span class="stat-label">Splat Count</span><span id="valSplats" class="stat-val">0</span></div>
+        <div class="stat-card"><span class="stat-label">Views Count</span><span id="valViews" class="stat-val">0</span></div>
+        <div class="stat-card"><span class="stat-label">Total Chunks</span><span id="valChunks" class="stat-val">0</span></div>
+    </div>
+    
+    <textarea id="hexInput" placeholder="Incolla l'esadecimale qui..."></textarea>
+    <div class="controls">
+        <input type="file" id="fileInput">
+        <button id="startBtn" onclick="startAnalysis()">ANALIZZA & ESTRAI</button>
+    </div>
+
+    <div id="progArea" style="display:none; margin-bottom: 20px;">
+        <progress id="progressBar" value="0" max="100"></progress>
+        <div id="progressStatus" style="font-size: 12px; margin-top:5px">Pronto.</div>
+    </div>
+
+    <div id="consoleLog" class="log"></div>
+
+    <table id="metadataTable">
+        <thead>
+            <tr><th>#</th><th>Offset (Hex)</th><th>Origine</th><th>Marker / ID</th><th>Lunghezza</th><th>Testa (4B)</th></tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+    </table>
+</div>
+
+<script>
+    const MARKERS = ["ZXSHPHSM3", "NZRHLPMT", "ALPSTNEC", "DNERRTXT", "ALPSXYLP", "ALPSKSAM", "TXTR", "SEBD"];
+    const ZSTD_MAGIC = [0x28, 0xB5, 0x2F];
+
+    function writeLog(text, type = '') {
+        const log = document.getElementById('consoleLog');
+        const entry = document.createElement('div');
+        entry.className = type;
+        entry.innerText = `[${new Date().toLocaleTimeString()}] ${text}`;
+        log.appendChild(entry);
+        log.scrollTop = log.scrollHeight;
+    }
+
+    async function saveBlob(data, name, isJson = false) {
+        let finalData = data;
+        if (isJson) {
+            try {
+                let str = (typeof data === 'string') ? data : new TextDecoder().decode(data);
+                str = str.replace(/\0+$/, '').trim(); 
+                const obj = JSON.parse(str);
+                finalData = JSON.stringify(obj, null, 4);
+            } catch (e) {
+                if(typeof finalData !== 'string') finalData = data;
+            }
+        }
+        const blob = new Blob([finalData], { type: isJson ? "application/json" : "application/octet-stream" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url; a.download = name;
+        document.body.appendChild(a);
+        a.click();
+        await new Promise(r => setTimeout(r, 450)); 
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+    }
+
+    function tryIterativeDecompress(zstd, data, chunkIdx) {
+        for (let i = 0; i < Math.min(data.length, 512); i++) {
+            try {
+                const slice = data.slice(0, data.length - i);
+                return zstd.decompress(slice);
+            } catch (e) {}
+        }
+        throw new Error("Decompressione fallita dopo 512 tentativi.");
+    }
+
+    async function startAnalysis() {
+        const btn = document.getElementById('startBtn');
+        const fileInput = document.getElementById('fileInput');
+        const hexInput = document.getElementById('hexInput').value.trim();
+        const tableBody = document.getElementById('tableBody');
+        const progBar = document.getElementById('progressBar');
+        const statsArea = document.getElementById('statsArea');
+
+        tableBody.innerHTML = ""; document.getElementById('consoleLog').innerHTML = "";
+        btn.disabled = true; document.getElementById('progArea').style.display = "block";
+
+        let bytes;
+        if (fileInput.files.length > 0) {
+            bytes = new Uint8Array(await fileInput.files[0].arrayBuffer());
+        } else if (hexInput) {
+            const cleanHex = hexInput.replace(/\s+/g, '');
+            bytes = new Uint8Array(cleanHex.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+        } else { btn.disabled = false; return; }
+
+        let points = [];
+        const view = new DataView(bytes.buffer);
+        
+        for (let i = 16; i < 800; i += 16) {
+            try {
+                const id = view.getUint32(i);
+                const offset = Number(view.getBigUint64(i + 8));
+                if (offset > 0 && offset < bytes.length) {
+                    points.push({ offset: offset, label: `ID_${id.toString(16).toUpperCase()}`, source: 'HEADER' });
+                }
+            } catch(e) {}
+        }
+
+        for (let i = 0; i < bytes.length - 8; i++) {
+            MARKERS.forEach(m => {
+                let match = true;
+                for (let j = 0; j < m.length; j++) if (bytes[i+j] !== m.charCodeAt(j)) { match = false; break; }
+                if (match) points.push({ offset: i, label: m, source: 'SCAN' });
+            });
+            if (bytes[i] === 0x28 && bytes[i+1] === 0xB5 && bytes[i+2] === 0x2F) {
+                points.push({ offset: i, label: "ZSTD_DATA", source: 'SCAN' });
+            }
+        }
+
+        points.sort((a, b) => a.offset - b.offset);
+        let finalPoints = [];
+        points.forEach(p => {
+            let existing = finalPoints.find(fp => Math.abs(fp.offset - p.offset) <= 8);
+            if (existing) { if (p.source === 'SCAN') existing.label = p.label; } 
+            else { finalPoints.push(p); }
+        });
+
+        document.getElementById('valChunks').innerText = finalPoints.length;
+
+        for (let i = 0; i < finalPoints.length; i++) {
+            let p = finalPoints[i];
+            let nextOffset = (i < finalPoints.length - 1) ? finalPoints[i+1].offset : bytes.length;
+            let slice = bytes.slice(p.offset, nextOffset);
+            
+            const padIdx = i.toString().padStart(3, '0');
+            const padOff = p.offset.toString(16).toUpperCase().padStart(8, '0');
+            
+            progBar.value = (i / finalPoints.length) * 100;
+            document.getElementById('progressStatus').innerText = `Processing Chunk ${padIdx}...`;
+
+            tableBody.insertAdjacentHTML('beforeend', `<tr><td>${padIdx}</td><td>0x${padOff}</td><td>${p.source}</td><td>${p.label}</td><td>${slice.length}</td><td>${Array.from(slice.slice(0, 4)).map(b => b.toString(16).padStart(2, '0')).join(' ')}</td></tr>`);
+
+            // --- LOGICA CHUNK 014 (SPZ) ---
+            if (padIdx === "014") {
+                await saveBlob(slice, `chunk_${padIdx}_off_${padOff}.spz`);
+                writeLog(`🎯 Chunk ${padIdx}: Salvato come file .spz`);
+            } 
+            else if (slice[0] === 0x28 && slice[1] === 0xB5) {
+                // LOGICA ZSTD
+                try {
+                    const zstd = window.fzstd || fzstd;
+                    const decomp = tryIterativeDecompress(zstd, slice, padIdx);
+                    
+                    let sample = new TextDecoder().decode(decomp.slice(0, 20)).trim();
+                    let isJson = sample.startsWith('{');
+
+                    let name = `chunk_${padIdx}_off_${padOff}`;
+                    if (padIdx === "012") name += "_cluster_centroids";
+                    if (padIdx === "015") name += "_cluster_masks";
+                    
+                    if (isJson && padIdx === "012") {
+                        try {
+                            const data = JSON.parse(new TextDecoder().decode(decomp).replace(/\0+$/, '').trim());
+                            document.getElementById('valSplats').innerText = data.splat_count.toLocaleString();
+                            document.getElementById('valViews').innerText = data.views?.length || 0;
+                            document.getElementById('statsArea').style.display = "grid";
+                        } catch(e){}
+                    }
+
+                    await saveBlob(decomp, `${name}${isJson ? '.json' : '.bin'}`, isJson);
+                    writeLog(`✅ Chunk ${padIdx}: Decompresso.`);
+                } catch(e) {
+                    writeLog(`❌ Chunk ${padIdx} (Zstd) fallito. Salvo RAW.`, "error");
+                    await saveBlob(slice, `chunk_${padIdx}_off_${padOff}_RAW.zst`);
+                }
+            } 
+            else {
+                // ALTRI CHUNK (008, 015 bin, ecc)
+                let isForcedJson = (padIdx === "008") || (slice[0] === 0x7B);
+                let name = `chunk_${padIdx}_off_${padOff}`;
+                
+                if (padIdx === "015") name += "_cluster_masks.bin";
+                else name += `_${p.label}${isForcedJson ? '.json' : '.bin'}`;
+
+                await saveBlob(slice, name, isForcedJson);
+                writeLog(`📦 Chunk ${padIdx}: Salvato.`);
+            }
+            await new Promise(r => setTimeout(r, 20));
+        }
+
+        writeLog("OPERAZIONE COMPLETATA!", "success");
+        btn.disabled = false;
+    }
+</script>
+</body>
+</html>
