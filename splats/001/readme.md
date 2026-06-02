@@ -6,7 +6,7 @@
 - Number of splats declared: 313611
 - Number of splats found in the spz file: 313611
 
-SPZ file viewed in online viewer:
+SPZ file viewed in [online viewer](https://scaniverse.8thwall.app/model-viewer/):
 
 <img width="424" height="633" alt="image" src="https://github.com/user-attachments/assets/14084c83-2b95-405b-b540-773d08be365c" />
 
