@@ -19,13 +19,13 @@ Analysis:
 |   # | Offset (Hex) | Origin  | Marker / ID | Length | Header (4B)  | |
 | --: | :----------- | :------ | :---------- | --------: | :---------- | ----
 | 000 | 0x00000140   | HEADER  | ID_0        |        31 | 00 03 38 01 |
-| 001 | 0x0000015F   | SCAN    | ZXSHPHSM3   |        81 | 5a 58 53 48 |
-| 002 | 0x000001B0   | SCAN    | NZRHLPMT    |        80 | 4e 5a 52 48 |
-| 003 | 0x00000200   | SCAN    | NZRHLPMT    |        80 | 4e 5a 52 48 |
-| 004 | 0x00000250   | SCAN    | ALPSTNEC    |        80 | 41 4c 50 53 |
-| 005 | 0x000002A0   | SCAN    | DNERRTXT    |        80 | 44 4e 45 52 |
-| 006 | 0x000002F0   | SCAN    | ALPSXYLP    |        80 | 41 4c 50 53 |
-| 007 | 0x00000340   | SCAN    | ALPSKSAM    |        48 | 41 4c 50 53 |
+| 001 | 0x0000015F   | SCAN    | ZXSHPHSM3   |        81 | 5a 58 53 48 | Reversed: 3MSHPHSXZ
+| 002 | 0x000001B0   | SCAN    | NZRHLPMT    |        80 | 4e 5a 52 48 | Reversed: TMPLHRZN (Template Horizon?)
+| 003 | 0x00000200   | SCAN    | NZRHLPMT    |        80 | 4e 5a 52 48 | Reversed: TMPLHRZN (Template Horizon?) 
+| 004 | 0x00000250   | SCAN    | ALPSTNEC    |        80 | 41 4c 50 53 | Reversed: CENTSPLAT (Center Splat?)
+| 005 | 0x000002A0   | SCAN    | DNERRTXT    |        80 | 44 4e 45 52 | Reversed: TXTRREND (Texture Render?)
+| 006 | 0x000002F0   | SCAN    | ALPSXYLP    |        80 | 41 4c 50 53 | Reversed: PLYXSPLA ( PLY X Splat?)
+| 007 | 0x00000340   | SCAN    | ALPSKSAM    |        48 | 41 4c 50 53 | Reversed: MASKSPLA (Mask for splat?)
 | 008 | 0x00000370   | HEADER  | ID_0        |       257 | 7b 20 62 75 | small JSON file
 | 009 | 0x00000471   | HEADER  | ZSTD_DATA   |     65288 | 28 b5 2f fd | Compressed in ZSTD format, starts by "SEBD" (53 45 42 44)
 | 010 | 0x00010379   | HEADER  | ZSTD_DATA   |      1121 | 28 b5 2f fd | Long JSON files, refers to horizon::platform_api::WorldPlayerConfigPlatformComponent
