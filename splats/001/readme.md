@@ -27,10 +27,11 @@ Analysis:
 | 006 | 0x000002F0   | SCAN    | ALPSXYLP    |        80 | 41 4c 50 53 | Reversed: PLYXSPLA ( PLY X Splat?)
 | 007 | 0x00000340   | SCAN    | ALPSKSAM    |        48 | 41 4c 50 53 | Reversed: MASKSPLA (Mask for splat?)
 | 008 | 0x00000370   | HEADER  | ID_0        |       257 | 7b 20 62 75 | small JSON file
-| 009 | 0x00000471   | HEADER  | ZSTD_DATA   |     65288 | 28 b5 2f fd | Compressed in ZSTD format, starts by "SEBD" (53 45 42 44)
-| 010 | 0x00010379   | HEADER  | ZSTD_DATA   |      1121 | 28 b5 2f fd | Long JSON files, refers to horizon::platform_api::WorldPlayerConfigPlatformComponent
-| 011 | 0x000107DA   | HEADER  | ZSTD_DATA   |       648 | 28 b5 2f fd | Long json file, refers to HyperscapePlayer and horizon::platform_api::PlayerPlatformComponent
-| 012 | 0x00010A62   | HEADER  | ZSTD_DATA   |      2077 | 28 b5 2f fd | Small json files, contains splat_count and views; clone of cluster_centroids.json found in C:\Users\cassi\Downloads\hyperscape-hack\com.meta.HyperscapeHmdCapture\files\xxxx_visibility_clusters on device?
+| 009 | 0x00000471   | HEADER  | ZSTD_DATA   |     65288 | 28 b5 2f fd | Compressed in ZSTD format, starts by "SEBD" (53 45 42 44). Unknown.
+| 010 | 0x00010379   | HEADER  | ZSTD_DATA   |      1121 | 28 b5 2f fd | JSON file, refers to horizon::platform_api::WorldPlayerConfigPlatformComponent
+| 011 | 0x000107DA   | HEADER  | ZSTD_DATA   |       648 | 28 b5 2f fd | JSON file, refers to HyperscapePlayer and horizon::platform_api::PlayerPlatformComponent
+| 012 | 0x00010A62   | HEADER  | ZSTD_DATA   |      2077 | 28 b5 2f fd | JSON file, contains splat_count and views; clone of cluster_centroids.json found in C:\Users\cassi\Downloads\hyperscape-hack\com.meta.HyperscapeHmdCapture\files\xxxx_visibility_clusters on device?
 | 013 | 0x0001127F   | HEADER  | TXTR        |    240800 | 2c 00 00 00 | Unknown, starts by 2C 00 00 00 54 58 54 52 followed by many zeros and then C0 AB 03 00
 | 014 | 0x0004BF1F   | HEADER  | ID_33A8E    |   7188746 | 1f 8b 08 00 | **Gaussian splat in SPZ format**
-| 015 | 0x00727029   | HEADER  | ZSTD_DATA   |        6_ |             | Malformed zstd chunk; unkwnown.
+| 015 | 0x00727029   | HEADER  | ZSTD_DATA   |       693071  |             | unknown.
+| 016 | 0x007D0378	 | SCAN	 | ZSTD_DATA	 | 771981	 | 28 b5 2f b4 | Malformed zstd chunk; unknown.
