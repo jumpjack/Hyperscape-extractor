@@ -1,7 +1,8 @@
+- raw file: [link](https://github.com/jumpjack/Hyperscape-extractor/blob/main/splats/001/An9xFUJb0SYNbWJbclQak_CMHIBwr91i6xjHHKJU3hzhRtJuEEoyjyHmBb-zgkXOg3lR-xONoIzoNjA_Ei3Sf2bDz_ekrKfokOwo_6Dn97uv9zVSrO8N4xV3gYHAn7kd)
 - Taken from this post: https://stackoverflow.com/questions/79874128/how-to-open-convert-a-gaussian-splatting-file-of-unknown-type
 - Further discussion: https://www.reddit.com/r/GaussianSplatting/comments/1tnkj5f/comment/oos14if/?context=1
-- Original filename: An9xFUJb0SYNbWJbclQak_CMHIBwr91i6xjHHKJU3hzhRtJuEEoyjyHmBb-zgkXOg3lR-xONoIzoNjA_Ei3Sf2bDz_ekrKfokOwo_6Dn97uv9zVSrO8N4xV3gYHAn7kd2ZpyRdfcsGM
-- Extraction method: unknown
+- Original filename: An9xFUJb0SYNbWJbclQak_CMHIBwr91i6xjHHKJU3hzhRtJuEEoyjyHmBb-zgkXOg3lR-xONoIzoNjA_Ei3Sf2bDz_ekrKfokOwo_6Dn97uv9zVSrO8N4xV3gYHAn7kd2ZpyRdfcsGM  (add .bin extension to open it in my script)
+- **Extraction method: unknown**
 - Number of splats declared: 313611
 - Number of splats found in the spz file: 313611
 
