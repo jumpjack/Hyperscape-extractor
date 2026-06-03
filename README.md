@@ -16,3 +16,9 @@ End offset can be calculated from offset of next chunk stored at 0x012c:
 
 
 Besides the SPZ files there are many other files and data inside the raw file, yet to be decoded.
+
+----------------
+
+- Splat editor: [https://superspl.at/editor](https://superspl.at/editor)
+- Splat viewer: [https://www.wakufactory.jp/wxr/splats/splatview.html](https://www.wakufactory.jp/wxr/splats/splatview.html)
+
