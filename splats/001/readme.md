@@ -16,22 +16,25 @@ Splat preview in Meta Quest:
 
 Analysis:
 
-|   # | Offset (Hex) | Origin  | Marker / ID | Length | Header (4B)  | |
-| --: | :----------- | :------ | :---------- | --------: | :---------- | ----
-| 000 | 0x00000140   | HEADER  | ID_0        |        31 | 00 03 38 01 |
-| 001 | 0x0000015F   | SCAN    | ZXSHPHSM3   |        81 | 5a 58 53 48 | Reversed: 3MSHPHSXZ
-| 002 | 0x000001B0   | SCAN    | NZRHLPMT    |        80 | 4e 5a 52 48 | Reversed: TMPLHRZN (Template Horizon?)
-| 003 | 0x00000200   | SCAN    | NZRHLPMT    |        80 | 4e 5a 52 48 | Reversed: TMPLHRZN (Template Horizon?) 
-| 004 | 0x00000250   | SCAN    | ALPSTNEC    |        80 | 41 4c 50 53 | Reversed: CENTSPLAT (Center Splat?)
-| 005 | 0x000002A0   | SCAN    | DNERRTXT    |        80 | 44 4e 45 52 | Reversed: TXTRREND (Texture Render?)
-| 006 | 0x000002F0   | SCAN    | ALPSXYLP    |        80 | 41 4c 50 53 | Reversed: PLYXSPLA ( PLY X Splat?)
-| 007 | 0x00000340   | SCAN    | ALPSKSAM    |        48 | 41 4c 50 53 | Reversed: MASKSPLA (Mask for splat?)
-| 008 | 0x00000370   | HEADER  | ID_0        |       257 | 7b 20 62 75 | small JSON file
-| 009 | 0x00000471   | HEADER  | ZSTD_DATA   |     65288 | 28 b5 2f fd | Compressed in ZSTD format, starts by "SEBD" (53 45 42 44). Unknown.
-| 010 | 0x00010379   | HEADER  | ZSTD_DATA   |      1121 | 28 b5 2f fd | JSON file, refers to horizon::platform_api::WorldPlayerConfigPlatformComponent
-| 011 | 0x000107DA   | HEADER  | ZSTD_DATA   |       648 | 28 b5 2f fd | JSON file, refers to HyperscapePlayer and horizon::platform_api::PlayerPlatformComponent
-| 012 | 0x00010A62   | HEADER  | ZSTD_DATA   |      2077 | 28 b5 2f fd | JSON file, contains splat_count and views; clone of cluster_centroids.json found in C:\Users\cassi\Downloads\hyperscape-hack\com.meta.HyperscapeHmdCapture\files\xxxx_visibility_clusters on device?
-| 013 | 0x0001127F   | HEADER  | TXTR        |    240800 | 2c 00 00 00 | Unknown, starts by 2C 00 00 00 54 58 54 52 followed by many zeros and then C0 AB 03 00
-| 014 | 0x0004BF1F   | HEADER  | ID_33A8E    |   7188746 | 1f 8b 08 00 | **Gaussian splat in SPZ format**
-| 015 | 0x00727029   | HEADER  | ZSTD_DATA   |       693071  |             | unknown.
-| 016 | 0x007D0378	 | SCAN	 | ZSTD_DATA	 | 771981	 | 28 b5 2f b4 | Malformed zstd chunk; unknown.
+| #   | Offset (Hex) | Found by | Marker / ID           | Length (dec) | Magic number | Description | Notes |
+|-----|--------------|-----------|-----------------------|-------------:|--------------|-------------|-------|
+| 000 | 0x00000140   | HEADER    | ID_0                  |           31 | 00 03 38 01  | . | . |
+| 001 | 0x0000015F   | SCAN      | ZXSHPHSM3             |           81 | 5A 58 53 48  | Reversed: 3MSHPHSXZ | |
+| 002 | 0x000001B0   | SCAN      | NZRHLPMT              |           80 | 4E 5A 52 48  | Reversed: TMPLHRZN | Template Horizon? |
+| 003 | 0x00000200   | SCAN      | NZRHLPMT              |           80 | 4E 5A 52 48  | Reversed: TMPLHRZN | Template Horizon? |
+| 004 | 0x00000250   | SCAN      | ALPSTNEC              |           80 | 41 4C 50 53  | Reversed: CENTSPLAT | Center Splat? |
+| 005 | 0x000002A0   | SCAN      | DNERRTXT              |           80 | 44 4E 45 52  | Reversed: TXTRREND | Texture Render? |
+| 006 | 0x000002F0   | SCAN      | ALPSXYLP              |           80 | 41 4C 50 53  | Reversed: PLYXSPLA | PLY X Splat? |
+| 007 | 0x00000340   | SCAN      | ALPSKSAM              |           48 | 41 4C 50 53  | Reversed: MASKSPLA | Mask for splat? |
+| 008 | 0x00000370   | OFFSET    | ID_0                  |          257 | 7B 20 62 75  | Small JSON file | |
+| 009 | 0x00000471   | OFFSET    | ZSTD magic number     |        65288 | 28 B5 2F FD  | Compressed in ZSTD format; starts with "SEBD" (53 45 42 44) | 3MSHPHSXZ chunk? |
+| 010 | 0x00010379   | OFFSET    | ZSTD magic number     |         1121 | 28 B5 2F FD  | JSON compressed in ZSTD format; refers to `horizon:: platform_api:: WorldPlayerConfigPlatformComponent` | TMPLHRZN chunk? |
+| 011 | 0x000107DA   | OFFSET    | ZSTD magic number     |          648 | 28 B5 2F FD  | JSON compressed in ZSTD format; refers to `HyperscapePlayer` and `horizon:: platform_api:: PlayerPlatformComponent` | TMPLHRZN chunk? |
+| 012 | 0x00010A62   | OFFSET    | ZSTD magic number     |         2077 | 28 B5 2F FD  | JSON compressed in ZSTD format; contains `splat_count` and `views`; appears to be a clone of `cluster_centroids.json` from `xxxx_visibility_clusters` | CENTSPLAT chunk? |
+| 013 | 0x0001127F   | OFFSET    | TXTR                  |       240800 | 2C 00 00 00  | Unknown; starts with `2C 00 00 00 54 58 54 52`, followed by many zeros and then `C0 AB 03 00` | TXTRREND chunk? |
+| 014 | 0x0004BF1F   | OFFSET    | none                  |      7188746 | 1F 8B 08 00  | **Gaussian splat in SPZ format** | PLYXSPLA chunk? |
+| 015 | 0x00727029   | OFFSET    | ZSTD magic number     |       693071 | —            | Alpha mask for splat? | MASKSPLA chunk? |
+| 016 | 0x007D0378   | SCAN      | Malformed ZSTD magic number |    771981 | 28 B5 2F B4 | Malformed ZSTD chunk; unknown | |
+
+
+
