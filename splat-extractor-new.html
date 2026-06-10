@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Gaussian Splat Blob Analyzer</title>
+        <script src="fsztd.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif; background: #141419; color: #e2e8f0; margin: 0; padding: 20px; }
+        .container { max-width: 1300px; margin: 0 auto; }
+        h1, h2, h3 { color: #38bdf8; margin-top: 0; }
+        h2 { border-bottom: 1px solid #334155; padding-bottom: 8px; margin-top: 10px; }
+        .control-panel { background: #1e293b; padding: 20px; border-radius: 12px; margin-bottom: 25px; display: flex; flex-wrap: wrap; gap: 25px; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.4); border: 1px solid #334155; }
+        .control-group { display: flex; flex-direction: column; gap: 6px; }
+        label { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8; font-weight: 600; }
+        input[type="file"] { background: #0f172a; padding: 10px; border-radius: 6px; color: #fff; border: 1px solid #475569; cursor: pointer; }
+        .toggle-btn { background: #22c55e; color: #052e16; border: none; padding: 12px 24px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: all 0.2s ease; font-size: 0.95rem; box-shadow: 0 2px 8px rgba(34,197,94,0.3); }
+        .toggle-btn.little { background: #0ea5e9; color: #0369a1; box-shadow: 0 2px 8px rgba(14,165,233,0.3); }
+        .toggle-btn:hover { transform: translateY(-1px); filter: brightness(1.1); }
+        .section { background: #1e293b; padding: 25px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); border: 1px solid #334155; }
+        pre { background: #090d16; padding: 15px; border-radius: 8px; overflow-x: auto; font-family: 'Cascadia Code', 'Consolas', monospace; color: #4ade80; border-left: 4px solid #38bdf8; font-size: 0.9rem; line-height: 1.5; }
+        .index-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-family: monospace; }
+        .index-table th, .index-table td { padding: 10px; text-align: left; border: 1px solid #334155; }
+        .index-table th { background: #0f172a; color: #38bdf8; }
+        .index-table tr:nth-child(even) { background: #162032; }
+        /* Evidenziazione per la riga 8 */
+        .index-table tr.highlight-row-8 {
+            background-color: #6d5b0f !important; /* Giallino scuro */
+            color: #ffeb3b; /* Testo giallo chiaro */
+        }
+        .block-card { background: #0f172a; border: 1px solid #475569; border-radius: 8px; margin-bottom: 20px; padding: 20px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.5); }
+        .block-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #1e293b; padding-bottom: 10px; margin-bottom: 15px; flex-wrap: wrap; gap: 10px; }
+        .marker-title { font-size: 1.3rem; font-weight: bold; color: #fbbf24; font-family: 'Cascadia Code', monospace; background: #292524; padding: 4px 10px; border-radius: 4px; border: 1px solid #78350f; }
+        .marker-raw { font-size: 0.85rem; color: #94a3b8; font-family: monospace; margin-left: 10px; }
+        .offset-label { font-family: monospace; color: #38bdf8; background: #0c4a6e; padding: 4px 8px; border-radius: 4px; font-size: 0.9rem; }
+        .grid-data { display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 20px; }
+        .data-group { background: #1e293b; padding: 15px; border-radius: 8px; border: 1px solid #334155; }
+        .data-group h4 { margin: 0 0 12px 0; color: #38bdf8; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #334155; padding-bottom: 5px; }
+        .data-values { font-family: 'Cascadia Code', 'Consolas', monospace; font-size: 0.85rem; white-space: pre-wrap; word-break: break-all; color: #f1f5f9; line-height: 1.6; }
+        .hex-raw { color: #f87171; letter-spacing: 1.5px; font-weight: bold; }
+        .info-tip { background: #0c4a6e; color: #e0f2fe; padding: 12px; border-radius: 6px; margin-bottom: 15px; font-size: 0.9rem; border-left: 4px solid #0284c7; }
+
+        /* Progress Bar Styles */
+        #progressContainer {
+            background: #1e293b;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            border: 1px solid #334155;
+            display: none; /* Hidden by default */
+        }
+        #progressBar {
+            width: 0%;
+            height: 25px;
+            background-color: #22c55e;
+            border-radius: 6px;
+            text-align: center;
+            line-height: 25px;
+            color: #052e16;
+            font-weight: bold;
+            transition: width 0.3s ease-in-out;
+        }
+        #progressText {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #94a3b8;
+            text-align: center;
+        }
+
+        /* Styles for the new "target block" when clicking on an offset */
+        .target-block {
+            background-color: #3f6212 !important; /* Greenish highlight */
+            border: 2px solid #a3e635 !important;
+            animation: highlightFade 3s ease-out forwards;
+        }
+
+        @keyframes highlightFade {
+            0% { background-color: #3f6212; border-color: #a3e635; }
+            100% { background-color: #0f172a; border-color: #475569; }
+        }
+
+        /* Style for clickable offsets */
+        .clickable-offset {
+            color: #4ade80;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+        .clickable-offset:hover {
+            color: #7ee09e;
+        }
+
+        .download-btn {
+            background: #3b82f6; /* Blue */
+            color: #fff;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            margin-left: 10px;
+        }
+        .download-btn:hover {
+            background: #2563eb;
+        }
+
+.collapsible-header {
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.2s ease;
+}
+
+.collapsible-header:hover {
+    background: #111827;
+}
+
+.block-content {
+    overflow: hidden;
+    max-height: 2000px;
+    transition: max-height 0.3s ease, opacity 0.2s ease;
+    opacity: 1;
+}
+
+.block-card.collapsed .block-content {
+    max-height: 0;
+    opacity: 0;
+    padding: 0;
+}
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Advanced Gaussian Splat Blob Analyzer</h1>
+
+    <div class="control-panel">
+        <div class="control-group">
+            <label for="fileInput">Binary File (.blob / .splat):</label>
+            <input type="file" id="fileInput">
+        </div>
+        <div class="control-group">
+            <label>Byte Reading Configuration:</label>
+            <button id="endianToggle" class="toggle-btn">BIG ENDIAN (Internal Default)</button>
+        </div>
+    </div>
+
+    <!-- Progress Bar Section -->
+    <div id="progressContainer">
+        <div id="progressBar">0%</div>
+        <div id="progressText">Waiting for file...</div>
+    </div>
+
+    <!-- NEW SECTION: Initial Pointer Table -->
+    <div class="section">
+        <h2>1. Initial Pointer Table (First ~320 Bytes)</h2>
+        <div class="info-tip">
+            Scans the first bytes for "ID/Metadata (64-bit)" + "Block Offset (64-bit)" pairs. Click on offsets to view the first 16 bytes at that position or download the full block.
+        </div>
+        <div id="initialPointersOutput">
+            <p style="color: #64748b;">Upload a file to analyze initial pointers...</p>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>2. Channel Descriptor Blocks (80 Bytes each)</h2>
+        <div class="info-tip">These blocks contain an 8-byte ASCII Marker (shown reversed) and 72 bytes of logical payload. These markers are searched at the beginning of the blocks pointed to by the initial table.</div>
+        <div id="blocksOutput"><p style="color: #64748b;">Upload a file...</p></div>
+    </div>
+
+    <div class="section">
+        <h2>3. JSON Metadata Block</h2>
+        <div class="info-tip">This block contains a JSON string, delimited by the pointer of row 02 (start) and the pointer of row 03 (end) of the Initial Pointer Table.</div>
+        <div id="metadataOutput"><pre>Upload a file...</pre></div>
+    </div>
+
+    <!-- Hidden block to display target offset data -->
+    <div id="targetOffsetData" class="section" style="display: none;">
+        <h2>Data at Pointed Offset: <span id="targetOffsetValue"></span></h2>
+        <div class="block-card target-block" id="targetBlockCard">
+            <div class="block-header">
+                <span class="marker-title">Raw Payload (16 Bytes)</span>
+                <span class="offset-label">Offset: <span id="targetBlockOffset"></span></span>
+            </div>
+            <div class="grid-data">
+                <div class="data-group">
+                    <h4>Interpretation as INTEGERS (Int32)</h4>
+                    <div class="data-values" id="targetInt32Values"></div>
+                </div>
+                <div class="data-group">
+                    <h4>Interpretation as DECIMALS (Float32)</h4>
+                    <div class="data-values" id="targetFloat32Values"></div>
+                </div>
+            </div>
+            <div class="data-group" style="margin-top: 15px;">
+                <h4>Raw Hex (16 Bytes)</h4>
+                <div class="data-values hex-raw" id="targetHexRaw"></div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    let fileBuffer = null;
+    let isLittleEndian = false;
+
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
+    const progressContainer = document.getElementById('progressContainer');
+
+    function updateProgress(percentage, message) {
+        progressBar.style.width = percentage + '%';
+        progressBar.textContent = percentage.toFixed(0) + '%';
+        progressText.textContent = message;
+        console.log(`[PROGRESS] ${message} (${percentage.toFixed(0)}%)`);
+    }
+
+    document.getElementById('fileInput').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) {
+            updateProgress(0, 'No file selected.');
+            progressContainer.style.display = 'none';
+            return;
+        }
+
+        progressContainer.style.display = 'block';
+        updateProgress(0, 'Loading file...');
+
+        const reader = new FileReader();
+
+        reader.onprogress = function(evt) {
+            if (evt.lengthComputable) {
+                const percentage = (evt.loaded / evt.total) * 100;
+                updateProgress(percentage, `Loading: ${file.name}`);
+            }
+        };
+
+        reader.onload = function(evt) {
+            fileBuffer = evt.target.result;
+            updateProgress(100, 'File loaded successfully! Starting analysis...');
+            console.time('Full Analysis');
+            setTimeout(eseguiAnalisiCompleta, 100); // Release thread to update UI
+        };
+
+        reader.onerror = function() {
+            updateProgress(0, 'Error loading file.');
+            console.error('FileReader error:', reader.error);
+        };
+        reader.readAsArrayBuffer(file);
+    });
+
+    document.getElementById('endianToggle').addEventListener('click', function() {
+        isLittleEndian = !isLittleEndian;
+        this.textContent = isLittleEndian ? "LITTLE ENDIAN" : "BIG ENDIAN (Internal Default)";
+        this.className = isLittleEndian ? "toggle-btn little" : "toggle-btn";
+        if (fileBuffer) {
+            updateProgress(0, 'Changing Endianness. Restarting analysis...');
+            console.time('Endianness Analysis');
+            setTimeout(eseguiAnalisiCompleta, 100); // Release thread
+        }
+    });
+
+    function reverseString(str) {
+        return str.split("").reverse().join("");
+    }
+
+    // Function to extract a potential 8-byte marker from a given offset
+    function extractPotentialMarker(buffer, offset, fileSize) {
+        if (!buffer || offset + 8 > fileSize) {
+            return null; // Beyond file limits
+        }
+        const markerBytes = new Uint8Array(buffer, offset, 8);
+        let markerCandidate = "";
+        let allPrintable = true;
+        for (let k = 0; k < 8; k++) {
+            const charCode = markerBytes[k];
+            if (charCode >= 32 && charCode <= 126) { // Printable ASCII
+                markerCandidate += String.fromCharCode(charCode);
+            } else {
+                allPrintable = false;
+                break;
+            }
+        }
+        if (allPrintable && markerCandidate.length === 8 && /^[A-Z0-9]{8}$/.test(markerCandidate)) {
+            return reverseString(markerCandidate); // Returns the reversed marker
+        }
+        return null;
+    }
+
+
+    // Function to display data at a specific offset (first 16 bytes)
+    function showTargetOffsetData(offset) {
+        if (!fileBuffer || offset + 16 > fileBuffer.byteLength) {
+            console.error(`Offset ${offset} out of file bounds.`);
+            return;
+        }
+
+        const targetView = new DataView(fileBuffer);
+
+        let int32Values = [];
+        let float32Values = [];
+        let hexRaw = "";
+
+        // Read bytes directly from fileBuffer for raw hex
+        const targetUint8Array = new Uint8Array(fileBuffer, offset, Math.min(16, fileBuffer.byteLength - offset));
+        targetUint8Array.forEach((b) => {
+            hexRaw += b.toString(16).padStart(2, '0').toUpperCase() + " ";
+        });
+
+        for (let k = 0; k < 4; k++) { // 4 Int32 / Float32 in 16 bytes
+            const byteInterno = k * 4;
+            if (offset + byteInterno + 4 > fileBuffer.byteLength) break; // Avoid reading out of bounds
+
+            let iVal = targetView.getInt32(offset + byteInterno, isLittleEndian);
+            let fVal = targetView.getFloat32(offset + byteInterno, isLittleEndian);
+            let fStr = (Math.abs(fVal) > 1e10 || (Math.abs(fVal) < 1e-5 && fVal !== 0 && !isNaN(fVal))) ? fVal.toExponential(4) : fVal.toFixed(5);
+
+            int32Values.push(`Reg [Byte +${String(byteInterno).padStart(2,'0')}]: ${iVal}`);
+            float32Values.push(`Reg [Byte +${String(byteInterno).padStart(2,'0')}]: ${fStr}`);
+        }
+
+        document.getElementById('targetOffsetValue').textContent = `0x${offset.toString(16).toUpperCase()} (${offset} byte)`;
+        document.getElementById('targetBlockOffset').textContent = `0x${offset.toString(16).toUpperCase()}`;
+        document.getElementById('targetInt32Values').innerHTML = int32Values.join('\n');
+        document.getElementById('targetFloat32Values').innerHTML = float32Values.join('\n');
+        document.getElementById('targetHexRaw').textContent = hexRaw.trim();
+
+        const targetBlockCard = document.getElementById('targetBlockCard');
+        targetBlockCard.classList.remove('target-block'); // Remove to reset animation
+        void targetBlockCard.offsetWidth; // Trigger reflow to restart animation
+        targetBlockCard.classList.add('target-block'); // Apply for animation
+
+        document.getElementById('targetOffsetData').style.display = 'block';
+        document.getElementById('targetOffsetData').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // Function to extract and download a data block
+    function extractAndDownloadBlock(offset, blockName, blockNumber, length) {
+        if (!fileBuffer || offset + length > fileBuffer.byteLength || length <= 0) {
+            console.error(`Cannot extract block: Offset ${offset} or length ${length} out of file bounds or invalid.`);
+            alert(`Error extracting block ${blockName}: file limits exceeded or length unknown/invalid.`);
+            return;
+        }
+
+        const blockData = fileBuffer.slice(offset, offset + length);
+        const hexOffset = offset.toString(16).toUpperCase().padStart(8, '0');
+        const filename = `${String(blockNumber).padStart(2, '0')}_0x${hexOffset}_${blockName}.bin`;
+
+        const blob = new Blob([blockData], { type: 'application/octet-stream' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        console.log(`[DOWNLOAD] Block ${filename} downloaded. Offset: 0x${hexOffset}, Length: ${length} bytes.`);
+    }
+
+    function eseguiAnalisiCompleta() {
+        if (!fileBuffer) {
+            console.warn("File buffer not available for analysis.");
+            return;
+        }
+
+        const view = new DataView(fileBuffer);
+        const uint8Array = new Uint8Array(fileBuffer);
+        const fileSize = fileBuffer.byteLength;
+        console.log(`[ANALYZE] Starting analysis for file of ${fileSize} bytes.`);
+
+        let jsonStartOffset = -1;
+        let jsonEndOffset = -1;
+
+        // Reset output sections
+        document.getElementById('initialPointersOutput').innerHTML = `<p style="color: #64748b;">Analysis in progress...</p>`;
+        document.getElementById('blocksOutput').innerHTML = `<p style="color: #64748b;">Analysis in progress...</p>`;
+        document.getElementById('metadataOutput').innerHTML = `<pre>Analysis in progress...</pre>`;
+        document.getElementById('targetOffsetData').style.display = 'none';
+
+
+        // PHASE 1: INITIAL POINTER TABLE ANALYSIS
+        updateProgress(5, 'Analyzing Initial Pointer Table...');
+        console.log('[ANALYZE] Phase 1: Analyzing Initial Pointer Table (first ~320 bytes).');
+        let pointersHtml = `<table class="index-table">
+            <thead>
+                <tr>
+                    <th>Entry #</th>
+                    <th>Read Offset</th>
+                    <th>ID/Metadata (64-bit Hex)</th>
+                    <th>ID/Metadata (Decimal)</th>
+                    <th>Block Offset (64-bit Hex)</th>
+                    <th>Block Offset (Decimal)</th>
+                    <th>Associated Marker (Length)</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>`;
+
+
+        const maxPointerTableScanBytes = 320;
+        let pointersFound = [];
+        let blockNumberCounter = 1;
+        // EACH ENTRY IS 32 BYTES (2 * 64-bit BigInt: ID + Pointer)
+        const pointerEntrySize = 32;
+        // Table starts at offset 0x20
+        const startOffset = 0x20;
+
+        for (let i = startOffset; i < maxPointerTableScanBytes; i += pointerEntrySize) {
+            if (i + pointerEntrySize > fileSize) break;
+
+            // Read ID (64-bit BigInt) and Pointer (64-bit BigInt)
+            const idValue = view.getBigUint64(i, isLittleEndian);
+            const pointerValue = view.getBigUint64(i + 8, isLittleEndian);
+
+            pointersFound.push({
+                idx: blockNumberCounter++,
+                readOffset: i,
+                id: idValue,
+                pointer: pointerValue,
+                marker: "Unknown"
+            });
+        }
+
+        // Sort pointers by offset to calculate block lengths
+        pointersFound.sort((a, b) => {
+            if (a.pointer < b.pointer) return -1;
+            if (a.pointer > b.pointer) return 1;
+            return 0;
+        });
+
+        // Determine jsonStartOffset and jsonEndOffset from sorted pointers
+        if (pointersFound.length >= 3) {
+            jsonStartOffset = Number(pointersFound[1].pointer); // Pointer for row 02
+            jsonEndOffset = Number(pointersFound[2].pointer)-1;   // Pointer for row 03
+
+            if (jsonEndOffset <= jsonStartOffset) {
+                console.warn(`[ANALYZE] jsonEndOffset (0x${jsonEndOffset.toString(16).toUpperCase()}) is not greater than jsonStartOffset (0x${jsonStartOffset.toString(16).toUpperCase()}). Resetting JSON offsets.`);
+                jsonStartOffset = -1;
+                jsonEndOffset = -1;
+            } else {
+                console.log(`[ANALYZE] jsonStartOffset set to 0x${jsonStartOffset.toString(16).toUpperCase()} (Entry #02)`);
+                console.log(`[ANALYZE] jsonEndOffset set to 0x${jsonEndOffset.toString(16).toUpperCase()} (Entry #03)`);
+            }
+        } else {
+            console.warn("[ANALYZE] Less than 3 pointers found. Cannot deterministically set jsonStartOffset and jsonEndOffset.");
+        }
+
+        // --- NEW LOGIC: EXTRACTING MARKERS FROM THE FIXED HEADER ---
+        const headerMarkerStartOffset = 0x0160;
+        const headerMarkerBlockSize = 80; // Each block is 80 bytes
+        const numberOfHeaderMarkers = 7; // There are 7 markers in the header
+        const extractedHeaderMarkers = [];
+
+        for (let i = 0; i < numberOfHeaderMarkers; i++) {
+            const currentMarkerOffset = headerMarkerStartOffset + (i * headerMarkerBlockSize);
+            const marker = extractPotentialMarker(fileBuffer, currentMarkerOffset, fileSize);
+            extractedHeaderMarkers.push(marker || "Unknown");
+        }
+        console.log("[ANALYZE] Markers extracted from header (0x0160, every 80 bytes):", extractedHeaderMarkers);
+        // --- END NEW LOGIC ---
+
+
+        // Calculate and display pointers with lengths and markers
+        pointersFound.forEach((entry, idx) => {
+            let blockLength;
+
+            if (idx + 1 < pointersFound.length) {
+                blockLength = Number(pointersFound[idx + 1].pointer - entry.pointer);
+            } else {
+                blockLength = fileSize - Number(entry.pointer);
+            }
+
+            // Associate markers extracted from the header to table rows, starting from row 03
+            let displayMarker = "Unknown";
+            if (idx >= 2 && (idx - 2) < extractedHeaderMarkers.length) { // From row 03 (index 2) onwards
+                displayMarker = extractedHeaderMarkers[idx - 2];
+            }
+            entry.marker = displayMarker;
+
+            // Add highlight class for row 08
+            const rowClass = entry.idx === 8 ? 'highlight-row-8' : '';
+
+            pointersHtml += `
+                <tr class="${rowClass}">
+                    <td>${entry.idx.toString().padStart(2, '0')}</td>
+                    <td>0x${entry.readOffset.toString(16).toUpperCase().padStart(4, '0')}</td>
+                    <td>0x${entry.id.toString(16).toUpperCase().padStart(16, '0')}</td>
+                    <td>${entry.id.toString()}</td>
+                    <td><span class="clickable-offset" data-offset="${entry.pointer}">0x${entry.pointer.toString(16).toUpperCase().padStart(8, '0')}</span></td>
+                    <td><span class="clickable-offset" data-offset="${entry.pointer}">${entry.pointer.toString()}</span></td>
+                    <td>${entry.marker} (${blockLength} bytes)</td>
+<td>
+    <button class="download-btn"
+            onclick="extractAndDownloadBlock(${entry.pointer}, '${entry.marker.replace(/'/g, "\\'")}', ${entry.idx}, ${blockLength})">
+        Download
+    </button>
+
+    <button class="download-btn"
+            onclick="extractAndDownloadDecodedBlock(${entry.pointer}, '${entry.marker.replace(/'/g, "\\'")}', ${entry.idx}, ${blockLength})">
+        Download decoded
+    </button>
+</td>
+                </tr>`;
+        });
+        pointersHtml += `</tbody></table>`;
+        document.getElementById('initialPointersOutput').innerHTML = pointersHtml;
+        console.log(`[ANALYZE] Phase 1 completed. Found ${pointersFound.length} pointers.`);
+
+        document.querySelectorAll('#initialPointersOutput .clickable-offset').forEach(span => {
+            span.addEventListener('click', function() {
+                const offset = parseInt(this.dataset.offset);
+                showTargetOffsetData(offset);
+            });
+        });
+
+
+        // PHASE 2: CHANNEL DESCRIPTOR BLOCKS (80 BYTES EACH) - ORIGINAL LOGIC MAINTAINED
+        updateProgress(60, 'Displaying Channel Descriptor Blocks (80 Bytes each)...');
+        console.log('[ANALYZE] Phase 2: Displaying Channel Descriptor Blocks (80 Bytes each).');
+        let displayedDescriptorBlocks = [];
+        // Start scanning after pointer table or first data block.
+        // End *before* jsonStartOffset to avoid overlapping with JSON metadata.
+        const scanStartForDescriptorsDisplay = Math.max(maxPointerTableScanBytes, Number(pointersFound[0]?.pointer || 0));
+        const scanEndForDescriptorsDisplay = (jsonStartOffset !== -1 && jsonStartOffset > scanStartForDescriptorsDisplay) ? jsonStartOffset : fileSize;
+
+
+        for (let i = scanStartForDescriptorsDisplay; i < scanEndForDescriptorsDisplay - 80; i++) {
+            let markerCandidate = "";
+            let isValidCandidate = true;
+            for (let j = 0; j < 8; j++) {
+                const charCode = uint8Array[i + j];
+                if (charCode >= 32 && charCode <= 126) {
+                    markerCandidate += String.fromCharCode(charCode);
+                } else {
+                    isValidCandidate = false;
+                    break;
+                }
+            }
+
+            if (isValidCandidate && markerCandidate.length === 8 && /^[A-Z0-9]{8}$/.test(markerCandidate)) {
+                displayedDescriptorBlocks.push({
+                    offset: i,
+                    marker: markerCandidate,
+                    reversedMarker: reverseString(markerCandidate),
+                    bytes: fileBuffer.slice(i + 8, i + 80)
+                });
+                i += 79;
+            }
+        }
+
+        const blocksContainer = document.getElementById('blocksOutput');
+        if (displayedDescriptorBlocks.length === 0) {
+            blocksContainer.innerHTML = "<p style='color:#f87171;'>No 80-byte descriptor blocks detected in the file.</p>";
+            console.warn('[ANALYZE] No 80-byte descriptor blocks found for display.');
+        } else {
+            blocksContainer.innerHTML = "";
+            displayedDescriptorBlocks.forEach((blocco) => {
+                const blockView = new DataView(blocco.bytes);
+                const numElementi = 18;
+                let stringaInt = "", stringaFloat = "", rawHex = "";
+
+                const subBytes = new Uint8Array(blocco.bytes);
+                subBytes.forEach((b, idx) => {
+                    rawHex += b.toString(16).padStart(2, '0').toUpperCase() + " ";
+                    if ((idx + 1) % 4 === 0) rawHex += "  ";
+                });
+
+                for (let k = 0; k < numElementi; k++) {
+                    const byteInterno = k * 4;
+                    let iVal, fVal, fStr;
+
+                    if (byteInterno + 4 <= blocco.bytes.byteLength) {
+                        iVal = blockView.getInt32(byteInterno, isLittleEndian);
+                        fVal = blockView.getFloat32(byteInterno, isLittleEndian);
+                        fStr = (Math.abs(fVal) > 1e10 || (Math.abs(fVal) < 1e-5 && fVal !== 0 && !isNaN(fVal))) ? fVal.toExponential(4) : fVal.toFixed(5);
+                    } else {
+                        iVal = "N/A"; fStr = "N/A";
+                    }
+
+                    stringaInt += `Reg [Byte +${String(byteInterno).padStart(2,'0')}]: ${iVal}\n`;
+                    stringaFloat += `Reg [Byte +${String(byteInterno).padStart(2,'0')}]: ${fStr}\n`;
+                }
+
+                const card = document.createElement('div');
+                card.className = 'block-card';
+                card.classList.add('collapsed');
+                card.innerHTML = `
+    <div class="block-header collapsible-header">
+        <div>
+            <span class="marker-title">REVERSED MARKER: ${blocco.reversedMarker}</span>
+            <span class="marker-raw">(In file: ${blocco.marker})</span>
+        </div>
+        <span class="offset-label">
+            File Position: 0x${blocco.offset.toString(16).toUpperCase()} (${blocco.offset} bytes)
+        </span>
+    </div>
+
+    <div class="block-content">
+        <div class="grid-data">
+            <div class="data-group">
+                <h4>Interpretation as INTEGERS (Int32) — Probable Data Offsets/Sizes</h4>
+                <div class="data-values">${stringaInt}</div>
+            </div>
+            <div class="data-group">
+                <h4>Interpretation as DECIMALS (Float32) — Probable Scale/Rotation/Color Parameters</h4>
+                <div class="data-values">${stringaFloat}</div>
+            </div>
+        </div>
+
+        <div class="data-group" style="margin-top: 15px;">
+            <h4>Subsequent Raw Payload (72 Bytes grouped by 4)</h4>
+            <div class="data-values hex-raw">${rawHex}</div>
+        </div>
+    </div>
+`;
+                blocksContainer.appendChild(card);
+const header = card.querySelector('.collapsible-header');
+
+header.addEventListener('click', () => {
+    card.classList.toggle('collapsed');
+});
+            });
+        }
+        console.log(`[ANALYZE] Phase 2 completed. Displayed ${displayedDescriptorBlocks.length} descriptor blocks.`);
+
+
+        // PHASE 3: JSON METADATA BLOCK EXTRACTION - STRICTLY BETWEEN jsonStartOffset AND jsonEndOffset
+        updateProgress(90, 'Extracting JSON Metadata Block...');
+        console.log('[ANALYZE] Phase 3: Extracting JSON Metadata Block.');
+
+        if (jsonStartOffset !== -1 && jsonEndOffset !== -1 && jsonEndOffset > jsonStartOffset) {
+            // Check if the range is valid and within file limits
+            if (jsonStartOffset < fileSize && jsonEndOffset <= fileSize) {
+                const jsonBytes = uint8Array.subarray(jsonStartOffset, jsonEndOffset);
+                const jsonPseudo = new TextDecoder().decode(jsonBytes);
+                const jsonText = fixPseudoJson(jsonPseudo)
+console.log("'" + jsonText + "'");
+                try {
+                    document.getElementById('metadataOutput').innerHTML = `<pre>${JSON.stringify(JSON.parse(jsonText), null, 4)}</pre>`;
+                    console.log(`[ANALYZE] JSON Metadata Block extracted from 0x${jsonStartOffset.toString(16).toUpperCase()} to 0x${jsonEndOffset.toString(16).toUpperCase()} and parsed successfully.`);
+                } catch (e) {
+                    document.getElementById('metadataOutput').innerHTML = `<pre>ASCII text detected between 0x${jsonStartOffset.toString(16).toUpperCase()} and 0x${jsonEndOffset.toString(16).toUpperCase()} but not parseable as clean JSON:\n\n${jsonText}</pre>`;
+                    console.warn('[ANALYZE] JSON Metadata Block found in the specified range but error parsing:', e);
+                }
+            } else {
+                 document.getElementById('metadataOutput').innerHTML = `<pre style="color:#f87171;">JSON Metadata Block: specified range (0x${jsonStartOffset.toString(16).toUpperCase()} - 0x${jsonEndOffset.toString(16).toUpperCase()}) out of file bounds (${fileSize} bytes).</pre>`;
+                 console.warn('[ANALYZE] JSON Metadata Block: range out of file bounds.');
+            }
+        } else {
+            document.getElementById('metadataOutput').innerHTML = `<pre style="color:#f87171;">JSON Metadata Block not detected in the expected range (between pointer row 02 and 03) or invalid range.</pre>`;
+            console.warn('[ANALYZE] No JSON Metadata Block found in the specified range.');
+        }
+
+        updateProgress(100, 'Analysis complete!');
+        console.timeEnd('Full Analysis');
+        console.log('[ANALYZE] Analysis complete.');
+        setTimeout(() => { progressContainer.style.display = 'none'; }, 2000);
+    }
+
+
+function fixPseudoJson(str) {
+
+    // mette le virgolette alle chiavi
+    str = str.replace(/([{,]\s*)([^"{},:\s][^:]*?)(\s*:)/g,
+        '$1"$2"$3');
+
+    // mette le virgolette ai valori non numerici
+    str = str.replace(/:\s*([^",{}\[\]\s][^,}]*)/g, function(match, value){
+
+        value = value.trim();
+
+        // numero
+        if (/^-?\d+(\.\d+)?$/.test(value))
+            return ": " + value;
+
+        // true false null
+        if (/^(true|false|null)$/i.test(value))
+            return ": " + value;
+
+        // già quotato
+        if (value.startsWith('"'))
+            return ": " + value;
+
+        return ': "' + value + '"';
+    });
+
+    return str;
+}
+
+async function extractAndDownloadDecodedBlock(offset, blockName, blockNumber, length)
+{
+    if (!fileBuffer || offset + length > fileBuffer.byteLength || length <= 0)
+    {
+        alert("Invalid block");
+        return;
+    }
+
+    let data = new Uint8Array(fileBuffer.slice(offset, offset + length));
+
+    const magic =
+        data[0].toString(16).padStart(2,"0") +
+        data[1].toString(16).padStart(2,"0") +
+        data[2].toString(16).padStart(2,"0") +
+        data[3].toString(16).padStart(2,"0");
+
+    const hexOffset = offset.toString(16).toUpperCase().padStart(8,"0");
+
+    //-------------------------------------------------
+    // FZSTD
+    //-------------------------------------------------
+
+if (magic.toUpperCase() == "28B52FFD")
+{
+    try
+    {
+        const zstd = window.fzstd || fzstd;
+
+        const decomp = tryIterativeDecompress(zstd, data, blockNumber);
+
+        let isJson = false;
+
+        try
+        {
+            JSON.parse(
+                new TextDecoder()
+                    .decode(decomp)
+                    .replace(/\0+$/, "")
+                    .trim()
+            );
+            isJson = true;
+        }
+        catch(e){}
+
+        await saveBlob(
+            decomp,
+            `${String(blockNumber).padStart(2,"0")}_0x${hexOffset}_${blockName}.${isJson ? "json" : "bin"}`,
+            isJson
+        );
+
+        return;
+    }
+    catch(e)
+    {
+        console.log(e);
+
+        // se la decompressione fallisce salva il file compresso
+        await saveBlob(
+            data,
+            `${String(blockNumber).padStart(2,"0")}_0x${hexOffset}_${blockName}.zst`
+        );
+
+        return;
+    }
+}
+
+    //-------------------------------------------------
+    // SPZ (gzip ma NON decomprimere)
+    //-------------------------------------------------
+
+    if (magic.toUpperCase()=="1F8B0800")
+    {
+        const blob=new Blob([data],{type:"application/octet-stream"});
+        const a=document.createElement("a");
+
+        a.href=URL.createObjectURL(blob);
+        a.download=
+            String(blockNumber).padStart(2,"0")+
+            "_0x"+
+            hexOffset+
+            "_"+
+            blockName+
+            ".spz";
+
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(a.href);
+
+        return;
+    }
+
+    //-------------------------------------------------
+    // normale
+    //-------------------------------------------------
+
+    const blob=new Blob([data],{type:"application/octet-stream"});
+    const a=document.createElement("a");
+
+    a.href=URL.createObjectURL(blob);
+    a.download=
+        String(blockNumber).padStart(2,"0")+
+        "_0x"+
+        hexOffset+
+        "_"+
+        blockName+
+        ".bin";
+
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(a.href);
+}
+
+    function tryIterativeDecompress(zstd, data, chunkIdx) {
+        for (let i = 0; i < Math.min(data.length, 512); i++) {
+            try {
+                const slice = data.slice(0, data.length - i);
+                return zstd.decompress(slice);
+            } catch (e) {}
+        }
+        throw new Error("Decompressione fallita dopo 512 tentativi.");
+    }
+
+    async function saveBlob(data, name, isJson = false) {
+        let finalData = data;
+        if (isJson) {
+            try {
+                let str = (typeof data === 'string') ? data : new TextDecoder().decode(data);
+                str = str.replace(/\0+$/, '').trim();
+                const obj = JSON.parse(str);
+                finalData = JSON.stringify(obj, null, 4);
+            } catch (e) {
+                if(typeof finalData !== 'string') finalData = data;
+            }
+        }
+        const blob = new Blob([finalData], { type: isJson ? "application/json" : "application/octet-stream" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url; a.download = name;
+        document.body.appendChild(a);
+        a.click();
+        await new Promise(r => setTimeout(r, 450));
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+    }
+</script>
+
+</body>
+</html>
