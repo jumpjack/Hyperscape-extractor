@@ -1,7 +1,7 @@
 # Hyperscape-extractor
 Can gaussian splats  be extracted from Meta Quest Hyperscape? Officially not... but maybe yes.
 
-In case you succeed in extracting a "suspicious" file from Meta Quest (in com.meta.HyperscapeHmdCapture folder  or something like that) , try submitting it to [this page](https://jumpjack.github.io/Hyperscape-extractor/splat-extractor-google.html) for analysis and SPZ extraction.
+In case you succeed in extracting a "suspicious" file from Meta Quest (in com.meta.HyperscapeHmdCapture folder  or something like that) , try submitting it to [this page](https://jumpjack.github.io/Hyperscape-extractor/splat-extractor-google.html) or[ this new page](https://jumpjack.github.io/Hyperscape-extractor/splat-extractor-new.htm) for analysis and SPZ extraction.
 
 You can also try this procedure (no tested) to extract files from Quest using a PC:
 
