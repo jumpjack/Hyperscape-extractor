@@ -359,7 +359,7 @@
         console.log(`[DOWNLOAD] Block ${filename} downloaded. Offset: 0x${hexOffset}, Length: ${length} bytes.`);
     }
 
-    function eseguiAnalisiCompleta() {
+function eseguiAnalisiCompleta() {
         if (!fileBuffer) {
             console.warn("File buffer not available for analysis.");
             return;
@@ -369,6 +369,29 @@
         const uint8Array = new Uint8Array(fileBuffer);
         const fileSize = fileBuffer.byteLength;
         console.log(`[ANALYZE] Starting analysis for file of ${fileSize} bytes.`);
+
+        // --- NUOVA LOGICA PER TROVARE L'OFFSET DINAMICO ---
+        const magicString = "XSHPHSM3";
+        let headerMarkerStartOffset = -1;
+
+        // Trasformiamo la stringa in un array di codici ASCII per confrontarli
+        const magicBytes = magicString.split('').map(c => c.charCodeAt(0));
+
+        // Cerchiamo la stringa nel buffer
+        for (let i = 0; i <= uint8Array.length - magicBytes.length; i++) {
+            let match = true;
+            for (let j = 0; j < magicBytes.length; j++) {
+                if (uint8Array[i + j] !== magicBytes[j]) {
+                    match = false;
+                    break;
+                }
+            }
+            if (match) {
+                headerMarkerStartOffset = i;
+                break;
+            }
+        }
+        // --------------------------------------------------
 
         let jsonStartOffset = -1;
         let jsonEndOffset = -1;
@@ -402,15 +425,12 @@
         const maxPointerTableScanBytes = 320;
         let pointersFound = [];
         let blockNumberCounter = 1;
-        // EACH ENTRY IS 32 BYTES (2 * 64-bit BigInt: ID + Pointer)
         const pointerEntrySize = 32;
-        // Table starts at offset 0x20
         const startOffset = 0x20;
 
         for (let i = startOffset; i < maxPointerTableScanBytes; i += pointerEntrySize) {
             if (i + pointerEntrySize > fileSize) break;
 
-            // Read ID (64-bit BigInt) and Pointer (64-bit BigInt)
             const idValue = view.getBigUint64(i, isLittleEndian);
             const pointerValue = view.getBigUint64(i + 8, isLittleEndian);
 
@@ -422,18 +442,16 @@
                 marker: "Unknown"
             });
         }
-
-        // Sort pointers by offset to calculate block lengths
+console.log(pointersFound);
         pointersFound.sort((a, b) => {
             if (a.pointer < b.pointer) return -1;
             if (a.pointer > b.pointer) return 1;
             return 0;
         });
 
-        // Determine jsonStartOffset and jsonEndOffset from sorted pointers
         if (pointersFound.length >= 3) {
-            jsonStartOffset = Number(pointersFound[1].pointer); // Pointer for row 02
-            jsonEndOffset = Number(pointersFound[2].pointer)-1;   // Pointer for row 03
+            jsonStartOffset = Number(pointersFound[1].pointer);
+            jsonEndOffset = Number(pointersFound[2].pointer)-1;
 
             if (jsonEndOffset <= jsonStartOffset) {
                 console.warn(`[ANALYZE] jsonEndOffset (0x${jsonEndOffset.toString(16).toUpperCase()}) is not greater than jsonStartOffset (0x${jsonStartOffset.toString(16).toUpperCase()}). Resetting JSON offsets.`);
@@ -447,18 +465,27 @@
             console.warn("[ANALYZE] Less than 3 pointers found. Cannot deterministically set jsonStartOffset and jsonEndOffset.");
         }
 
-        // --- NEW LOGIC: EXTRACTING MARKERS FROM THE FIXED HEADER ---
-        const headerMarkerStartOffset = 0x0160;
-        const headerMarkerBlockSize = 80; // Each block is 80 bytes
-        const numberOfHeaderMarkers = 7; // There are 7 markers in the header
+        // --- NEW LOGIC: EXTRACTING MARKERS FROM THE DYNAMIC HEADER ---
         const extractedHeaderMarkers = [];
+        
+        if (headerMarkerStartOffset !== -1) {
+console.log("I marker iniziano da ",headerMarkerStartOffset.toString(16));        
+            const headerMarkerBlockSize = Number(pointersFound[1].pointer - pointersFound[0].pointer) / 7; //80; 
+            const numberOfHeaderMarkers = 7; 
 
-        for (let i = 0; i < numberOfHeaderMarkers; i++) {
-            const currentMarkerOffset = headerMarkerStartOffset + (i * headerMarkerBlockSize);
-            const marker = extractPotentialMarker(fileBuffer, currentMarkerOffset, fileSize);
-            extractedHeaderMarkers.push(marker || "Unknown");
+            for (let i = 0; i < numberOfHeaderMarkers; i++) {
+                const currentMarkerOffset = headerMarkerStartOffset + (i * headerMarkerBlockSize);
+                
+                // Controllo per non uscire dai limiti del file
+                if (currentMarkerOffset + 8 <= fileSize) {
+                    const marker = extractPotentialMarker(fileBuffer, currentMarkerOffset, fileSize);
+                    extractedHeaderMarkers.push(marker || "Unknown");
+                }
+            }
+            console.log(`[ANALYZE] Markers extracted from header (Starting at 0x${headerMarkerStartOffset.toString(16).toUpperCase()}):`, extractedHeaderMarkers);
+        } else {
+            console.error("[ANALYZE] Magic string XSHPHSM3 not found! Cannot extract header markers.");
         }
-        console.log("[ANALYZE] Markers extracted from header (0x0160, every 80 bytes):", extractedHeaderMarkers);
         // --- END NEW LOGIC ---
 
 
